@@ -1,56 +1,70 @@
+```js
 export default async function handler(req, res) {
-  // Настройка CORS-заголовков для Chatbox
+  // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "*");
 
   if (req.method === "OPTIONS") {
-    res.status(200).end();
-    return;
+    return res.status(200).end();
   }
 
   try {
-    const baseUrl = "https://googleapis.com";
-    
-    // Формируем чистый путь до Google API, убирая префиксы прокси, если они есть
+    const baseUrl = "https://generativelanguage.googleapis.com";
+
+    // Убираем /api/proxy из URL
     let cleanPath = req.url.replace(/^\/api\/proxy/, "");
+
     if (!cleanPath.startsWith("/")) {
       cleanPath = "/" + cleanPath;
     }
 
     const targetUrl = `${baseUrl}${cleanPath}`;
 
-    const headers = new Headers();
+    // Копируем headers
+    const headers = {};
+
     for (const [key, value] of Object.entries(req.headers)) {
       if (key.toLowerCase() !== "host") {
-        headers.append(key, value);
+        headers[key] = value;
       }
     }
 
-    const options = {
-      method: req.method,
-      headers: headers
-    };
+    // Читаем body
+    let body = null;
 
     if (req.method !== "GET" && req.method !== "HEAD") {
-      // Передаем тело запроса (включая файлы и текст)
-      const buffers = [];
+      const chunks = [];
+
       for await (const chunk of req) {
-        buffers.push(chunk);
+        chunks.push(chunk);
       }
+
+      body = Buffer.concat(chunks);
     }
 
-    const response = await fetch(targetUrl, options);
-    
+    // Запрос к Gemini API
+    const response = await fetch(targetUrl, {
+      method: req.method,
+      headers,
+      body
+    });
+
+    // Ответ клиенту
     res.status(response.status);
+
     response.headers.forEach((value, key) => {
       res.setHeader(key, value);
     });
 
-    const responseBuffer = Buffer.from(await response.arrayBuffer());
-    res.send(responseBuffer);
+    const data = Buffer.from(await response.arrayBuffer());
+
+    res.send(data);
 
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({
+      error: err.message
+    });
   }
 }
+```

@@ -1,8 +1,10 @@
+```json id="jvrtn0"
 {
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/api/proxy.js"
+      "destination": "/api/proxy"
     }
   ]
 }
+```

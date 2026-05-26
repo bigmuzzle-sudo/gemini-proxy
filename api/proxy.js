@@ -1,4 +1,3 @@
-```js id="1b8b9k"
 export default async function handler(req, res) {
   // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -83,4 +82,3 @@ export default async function handler(req, res) {
     });
   }
 }
-```

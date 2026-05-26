@@ -1,43 +1,35 @@
 export default async function handler(req, res) {
-try {
-const targetUrl =
-'https://generativelanguage.googleapis.com' +
-req.url.replace('/api/proxy', '');
+  try {
+    const url = new URL(req.url, "https://generativelanguage.googleapis.com");
 
-```
-const headers = { ...req.headers };
+    const target = "https://generativelanguage.googleapis.com" + url.pathname.replace("/api/proxy", "") + url.search;
 
-delete headers.host;
-delete headers['content-length'];
+    const headers = new Headers(req.headers);
+    headers.delete("host");
 
-const response = await fetch(targetUrl, {
-  method: req.method,
-  headers,
-  body:
-    req.method !== 'GET' && req.method !== 'HEAD'
-      ? req
-      : undefined,
-  duplex: 'half',
-});
+    const options = {
+      method: req.method,
+      headers,
+    };
 
-res.status(response.status);
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      options.body = req;
+    }
 
-response.headers.forEach((value, key) => {
-  res.setHeader(key, value);
-});
+    const response = await fetch(target, options);
 
-res.setHeader('Access-Control-Allow-Origin', '*');
-res.setHeader('Access-Control-Allow-Methods', '*');
-res.setHeader('Access-Control-Allow-Headers', '*');
+    res.status(response.status);
 
-const buffer = Buffer.from(await response.arrayBuffer());
+    response.headers.forEach((v, k) => {
+      res.setHeader(k, v);
+    });
 
-res.send(buffer);
-```
+    res.setHeader("Access-Control-Allow-Origin", "*");
 
-} catch (err) {
-res.status(500).json({
-error: err.message,
-});
-}
+    const data = Buffer.from(await response.arrayBuffer());
+    res.send(data);
+
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 }
